@@ -37,6 +37,7 @@ type Embed struct {
 	Title       string  `json:"title"`
 	URL         string  `json:"url"`
 	Description string  `json:"description"`
+	Color       int     `json:"color"`
 	Fields      []Field `json:"fields,omitempty"`
 }
 
@@ -68,11 +69,17 @@ func toDiscord(notification Notification) DiscordWebhook {
 		conditionName = "-"
 	}
 
+	colour := 1609983
+	if notification.Incident.State == "open" {
+		colour = 16065069
+	}
+
 	return DiscordWebhook{
 		Embeds: []Embed{
 			Embed{
 				Title: notification.Incident.Summary,
 				URL:   notification.Incident.URL,
+				Color: colour,
 				Fields: []Field{
 					Field{
 						Name:  "Incident ID",
