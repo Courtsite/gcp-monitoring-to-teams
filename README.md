@@ -4,6 +4,8 @@
 
 _This requires Google Cloud Functions Alpha with Go support._
 
+![Notification in Discord](screenshot.png "Notification in Discord")
+
 
 ## Getting Started
 
