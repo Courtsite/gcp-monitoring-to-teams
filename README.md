@@ -9,6 +9,16 @@ _This requires Google Cloud Functions Alpha with Go support. This project has be
 
 ## Getting Started
 
+### Prerequisites
+
+- Ensure you have `gcloud` installed:
+    - MacOS: `brew cask install google-cloud-sdk`
+    - Others: https://cloud.google.com/sdk/gcloud
+- Ensure you have authenticated with Google Cloud: `gcloud auth login`
+- Set your current working project: `gcloud config set project <project>`
+
+### Deployment
+
 1. Clone / download a copy of this repository
 2. Copy `.env.sample.yaml` to `.env.yaml`, and modify the environment variables declared in the file
 3. Run `./deploy.sh`
