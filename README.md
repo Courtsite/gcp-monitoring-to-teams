@@ -14,8 +14,8 @@ _This requires Google Cloud Functions Alpha with Go support. This project has be
 - Ensure you have `gcloud` installed:
     - MacOS: `brew cask install google-cloud-sdk`
     - Others: https://cloud.google.com/sdk/gcloud
-- Ensure you have authenticated with Google Cloud: `gcloud auth login`
-- Set your current working project: `gcloud config set project <project>`
+- Ensure you have authenticated with Google Cloud: `gcloud init`
+- (Optional) Set your current working project: `gcloud config set project <project>`
 
 ### Deployment
 
