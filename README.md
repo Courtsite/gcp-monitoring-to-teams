@@ -2,7 +2,7 @@
 
 ⚙️ A simple Google Cloud Function in Go to transform / proxy Stackdriver Static Webhook notifications to Discord.
 
-_This requires Google Cloud Functions Alpha with Go support. This project has been tested with the Go 1.11, and Go 1.13 runtimes_
+_This project has been tested with the Go 1.11, and Go 1.13 runtimes._
 
 ![Notification in Discord](screenshot.png "Notification in Discord")
 
