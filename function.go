@@ -3,11 +3,15 @@ package function
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/dustin/go-humanize"
 )
 
 type Notification struct {
@@ -28,35 +32,42 @@ type Incident struct {
 	Summary       string `json:"summary"`
 }
 
-type DiscordWebhook struct {
-	Content string  `json:"content"`
-	Embeds  []Embed `json:"embeds,omitempty"`
+type MessageCard struct {
+	Type             string            `json:"@type"`
+	Context          string            `json:"@context"`
+	Summary          string            `json:"summary,omitempty"`
+	Title            string            `json:"title,omitempty"`
+	Text             string            `json:"text,omitempty"`
+	ThemeColor       string            `json:"themeColor,omitempty"`
+	Sections         []Section         `json:"sections,omitempty"`
+	PotentialActions []PotentialAction `json:"potentialAction,omitempty"`
 }
 
-type Embed struct {
-	Title       string  `json:"title"`
-	URL         string  `json:"url"`
-	Description string  `json:"description"`
-	Color       int     `json:"color"`
-	Fields      []Field `json:"fields,omitempty"`
+type Section struct {
+	Facts []Fact `json:"facts,omitempty"`
 }
 
-type Field struct {
-	Name   string `json:"name"`
-	Value  string `json:"value"`
-	Inline bool   `json:"inline"`
+type Fact struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
-func toDiscord(notification Notification) DiscordWebhook {
-	startedAt := "-"
-	endedAt := "-"
+type PotentialAction struct {
+	Type    string              `json:"@type"`
+	Name    string              `json:"name"`
+	Targets []map[string]string `json:"targets,omitempty"`
+}
+
+func toTeams(notification Notification) MessageCard {
+	var startedDt time.Time
+	var endedDt time.Time
 
 	if st := notification.Incident.StartedAt; st > 0 {
-		startedAt = time.Unix(st, 0).String()
+		startedDt = time.Unix(st, 0)
 	}
 
 	if et := notification.Incident.EndedAt; et > 0 {
-		endedAt = time.Unix(et, 0).String()
+		endedDt = time.Unix(et, 0)
 	}
 
 	policyName := notification.Incident.PolicyName
@@ -69,39 +80,65 @@ func toDiscord(notification Notification) DiscordWebhook {
 		conditionName = "-"
 	}
 
-	colour := 1609983
-	if notification.Incident.State == "open" {
-		colour = 16065069
+	facts := []Fact{
+		{
+			Name:  "Incident ID",
+			Value: notification.Incident.IncidentID,
+		},
+		{
+			Name:  "Condition",
+			Value: conditionName,
+		},
 	}
 
-	return DiscordWebhook{
-		Embeds: []Embed{
-			Embed{
-				Title: notification.Incident.Summary,
-				URL:   notification.Incident.URL,
-				Color: colour,
-				Fields: []Field{
-					Field{
-						Name:  "Incident ID",
-						Value: notification.Incident.IncidentID,
-					},
-					Field{
-						Name:   "Policy",
-						Value:  policyName,
-						Inline: true,
-					},
-					Field{
-						Name:   "Condition",
-						Value:  conditionName,
-						Inline: true,
-					},
-					Field{
-						Name:  "Started At",
-						Value: startedAt,
-					},
-					Field{
-						Name:  "Ended At",
-						Value: endedAt,
+	if !startedDt.IsZero() {
+		facts = append(facts, Fact{
+			Name:  "Started at",
+			Value: startedDt.String(),
+		})
+		if !endedDt.IsZero() {
+			duration := strings.TrimSpace(humanize.RelTime(startedDt, endedDt, "", ""))
+			facts = append(facts, Fact{
+				Name:  "Ended at",
+				Value: fmt.Sprintf("%s (%s)", endedDt.String(), duration),
+			})
+		}
+	}
+
+	// Blue
+	colour := "#1890FF"
+	title := fmt.Sprintf(`Incident closed for "%s".`, policyName)
+	if notification.Incident.State == "open" {
+		// Red
+		title = fmt.Sprintf(`Incident opened for "%s".`, policyName)
+		colour = "#F5222D"
+	}
+
+	summary := "No summary available."
+	if notification.Incident.Summary != "" {
+		summary = notification.Incident.Summary
+	}
+
+	return MessageCard{
+		Type:       "MessageCard",
+		Context:    "https://schema.org/extensions",
+		ThemeColor: colour,
+		Title:      title,
+		Text:       summary,
+		Summary:    summary,
+		Sections: []Section{
+			{
+				Facts: facts,
+			},
+		},
+		PotentialActions: []PotentialAction{
+			{
+				Type: "OpenUri",
+				Name: "View Incident",
+				Targets: []map[string]string{
+					{
+						"os":  "default",
+						"uri": notification.Incident.URL,
 					},
 				},
 			},
@@ -121,12 +158,12 @@ func F(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	discordWebhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
-	if discordWebhookURL == "" {
-		log.Fatalln("`DISCORD_WEBHOOK_URL` is not set in the environment")
+	teamsWebhookURL := os.Getenv("TEAMS_WEBHOOK_URL")
+	if teamsWebhookURL == "" {
+		log.Fatalln("`TEAMS_WEBHOOK_URL` is not set in the environment")
 	}
 
-	if _, err := url.Parse(discordWebhookURL); err != nil {
+	if _, err := url.Parse(teamsWebhookURL); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -141,14 +178,14 @@ func F(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 	}
 
-	discordWebhook := toDiscord(notification)
+	teamsWebhook := toTeams(notification)
 
-	payload, err := json.Marshal(discordWebhook)
+	payload, err := json.Marshal(teamsWebhook)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	res, err := http.Post(discordWebhookURL, "application/json", bytes.NewBuffer(payload))
+	res, err := http.Post(teamsWebhookURL, "application/json", bytes.NewBuffer(payload))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -160,5 +197,5 @@ func F(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(discordWebhook)
+	json.NewEncoder(w).Encode(teamsWebhook)
 }

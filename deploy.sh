@@ -2,7 +2,7 @@
 
 set +e
 
-gcloud functions deploy stackdriver-to-discord \
+gcloud functions deploy gcp-monitoring-to-teams \
     --entry-point=F \
     --memory=128MB \
     --region=us-central1 \

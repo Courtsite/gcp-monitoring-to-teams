@@ -1,10 +1,10 @@
-# stackdriver-to-discord
+# gcp-monitoring-to-teams
 
-⚙️ A simple Google Cloud Function in Go to transform / proxy Stackdriver Static Webhook notifications to Discord.
+⚙️ A simple Google Cloud Function in Go to transform / proxy [Google Cloud Platform (GCP) Monitoring](https://cloud.google.com/monitoring) static webhook notifications to [Microsoft Teams](https://teams.microsoft.com/).
 
-_This project has been tested with the Go 1.11, and Go 1.13 runtimes._
+![Notification in Teams](screenshot.png "Notification in Teams")
 
-![Notification in Discord](screenshot.png "Notification in Discord")
+_Forked from https://github.com/Courtsite/stackdriver-to-discord_
 
 
 ## Getting Started
@@ -22,6 +22,8 @@ _This project has been tested with the Go 1.11, and Go 1.13 runtimes._
 1. Clone / download a copy of this repository
 2. Copy `.env.sample.yaml` to `.env.yaml`, and modify the environment variables declared in the file
 3. Run `./deploy.sh`
-4. Configure Stackdriver static webhook notification in https://app.google.stackdriver.com/settings/accounts/notifications/static-webhook/add
+4. Configure GCP Monitoring static webhook notification channel in https://console.cloud.google.com/monitoring/alerting/notifications
 
-_Be sure to append `?auth_token=<AUTH_TOKEN>` to the end of the URL under `httpsTrigger` (returned in the output from (3)). e.g. https://my-region-my-organisation.cloudfunctions.net/stackdriver-to-discord?auth_token=123456._
+_Be sure to append `?auth_token=<AUTH_TOKEN>` to the end of the URL under `httpsTrigger` (returned in the output from (3)). e.g. https://my-region-my-organisation.cloudfunctions.net/gcp-monitoring-to-teams?auth_token=123456._
+
+![GCP Monitoring Add New Webhook](installation.png "GCP Monitoring Add New Webhook")
