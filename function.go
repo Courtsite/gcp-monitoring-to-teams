@@ -167,9 +167,10 @@ func F(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 	}
 
-	if r.Method != "POST" || r.Header.Get("Content-Type") != "application/json" {
+	if contentType := r.Header.Get("Content-Type"); r.Method != "POST" || contentType != "application/json" {
+		log.Printf("\ninvalid method / content-type: %s / %s \n", r.Method, contentType)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("invalid request"))
+		_, _ = w.Write([]byte("invalid request"))
 		return
 	}
 
@@ -197,5 +198,9 @@ func F(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(teamsWebhook)
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(teamsWebhook)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
