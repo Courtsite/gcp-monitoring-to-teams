@@ -20,6 +20,7 @@ type Notification struct {
 }
 
 type Incident struct {
+	ProjectID     string `json:"scoping_project_id"`
 	IncidentID    string `json:"incident_id"`
 	ResourceID    string `json:"resource_id"`
 	ResourceName  string `json:"resource_name"`
@@ -70,6 +71,11 @@ func toTeams(notification Notification) MessageCard {
 		endedDt = time.Unix(et, 0)
 	}
 
+	projectId := notification.Incident.ProjectID
+	if projectId == "" {
+		projectId = "-"
+	}
+
 	policyName := notification.Incident.PolicyName
 	if policyName == "" {
 		policyName = "-"
@@ -81,6 +87,10 @@ func toTeams(notification Notification) MessageCard {
 	}
 
 	facts := []Fact{
+		{
+			Name:  "Project ID",
+			Value: notification.Incident.ProjectID,
+		},
 		{
 			Name:  "Incident ID",
 			Value: notification.Incident.IncidentID,
@@ -105,12 +115,12 @@ func toTeams(notification Notification) MessageCard {
 		}
 	}
 
-	// Blue
-	colour := "#1890FF"
-	title := fmt.Sprintf(`Incident closed for "%s".`, policyName)
+	// Green
+	colour := "#18FF3B"
+	title := fmt.Sprintf(`"%s" - Incident closed for "%s".`, projectId, policyName)
 	if notification.Incident.State == "open" {
 		// Red
-		title = fmt.Sprintf(`Incident opened for "%s".`, policyName)
+		title = fmt.Sprintf(`"%s" - Incident opened for "%s".`, projectId, policyName)
 		colour = "#F5222D"
 	}
 
